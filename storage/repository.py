@@ -35,15 +35,23 @@ class Repository:
         else:
             history = old_market.history
 
+        # Always ensure probabilities are available.
+        if update.implied_probabilities is not None:
+            probabilities = update.implied_probabilities.copy()
+        else:
+            inverse = [1.0 / odd for odd in update.odds]
+            total = sum(inverse)
+
+            probabilities = [
+                value / total * 100.0
+                for value in inverse
+            ]
+
         history.append(
             MarketSnapshot(
                 timestamp=update.timestamp,
                 odds=update.odds.copy(),
-                probabilities=(
-                    update.implied_probabilities.copy()
-                    if update.implied_probabilities is not None
-                    else None
-                ),
+                probabilities=probabilities,
             )
         )
 
@@ -53,11 +61,7 @@ class Repository:
             market_period=update.market_period,
             outcome_names=update.outcome_names,
             odds=update.odds.copy(),
-            implied_probabilities=(
-                update.implied_probabilities.copy()
-                if update.implied_probabilities is not None
-                else None
-            ),
+            implied_probabilities=probabilities,
             updated_at=update.timestamp,
             in_running=update.in_running,
             history=history,
