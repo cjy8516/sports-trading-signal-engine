@@ -1,19 +1,14 @@
-from __future__ import annotations
-
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, field
 from datetime import datetime
+
+from domain.snapshot import MarketSnapshot
 
 
 @dataclass(slots=True)
 class MarketState:
-    """
-    Latest state of a single betting market.
-    """
-
     market: str
-
     market_parameter: str | None
-
     market_period: str | None
 
     outcome_names: list[str]
@@ -26,4 +21,6 @@ class MarketState:
 
     in_running: bool
 
-    previous_odds: list[float] | None = None
+    history: deque[MarketSnapshot] = field(
+        default_factory=lambda: deque(maxlen=20)
+    )

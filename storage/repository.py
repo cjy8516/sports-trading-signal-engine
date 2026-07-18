@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections import deque
+
+from domain.events import OddsUpdate
 from domain.fixture_state import FixtureState
 from domain.market_state import MarketState
-from domain.events import OddsUpdate
+from domain.snapshot import MarketSnapshot
 
 
 class Repository:
@@ -13,7 +16,7 @@ class Repository:
     def __init__(self) -> None:
         self._fixtures: dict[int, FixtureState] = {}
 
-    def update(self, update: OddsUpdate) -> None:
+    def update(self, update: OddsUpdate) -> MarketState:
         """
         Apply a single odds update.
         """
@@ -27,21 +30,42 @@ class Repository:
 
         old_market = fixture.markets.get(market_key)
 
-        previous_odds = None
-        if old_market is not None:
-            previous_odds = old_market.odds.copy()
+        if old_market is None:
+            history: deque[MarketSnapshot] = deque(maxlen=20)
+        else:
+            history = old_market.history
 
-        fixture.markets[market_key] = MarketState(
+        history.append(
+            MarketSnapshot(
+                timestamp=update.timestamp,
+                odds=update.odds.copy(),
+                probabilities=(
+                    update.implied_probabilities.copy()
+                    if update.implied_probabilities is not None
+                    else None
+                ),
+            )
+        )
+
+        market_state = MarketState(
             market=update.market,
             market_parameter=update.market_parameter,
             market_period=update.market_period,
             outcome_names=update.outcome_names,
-            odds=update.odds,
-            previous_odds=previous_odds,
-            implied_probabilities=update.implied_probabilities,
+            odds=update.odds.copy(),
+            implied_probabilities=(
+                update.implied_probabilities.copy()
+                if update.implied_probabilities is not None
+                else None
+            ),
             updated_at=update.timestamp,
             in_running=update.in_running,
+            history=history,
         )
+
+        fixture.markets[market_key] = market_state
+
+        return market_state
 
     def get_fixture(self, fixture_id: int) -> FixtureState | None:
         return self._fixtures.get(fixture_id)

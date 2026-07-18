@@ -1,66 +1,70 @@
 from __future__ import annotations
 
-from domain.fixture_state import FixtureState
+from domain.market_state import MarketState
 from domain.signal import Signal, SignalType
+from .momentum import Momentum
 
 
 class SignalEngine:
     """
-    Very simple rule-based signal engine.
+    Generates trading signals from market momentum.
 
-    Looks only at the 1X2 market.
+    V1
+    ---
+    * Only analyses the 1X2 market.
+    * Uses probability velocity.
+    * Ignores insignificant movements.
     """
 
     MARKET = "1X2_PARTICIPANT_RESULT"
 
-    def evaluate(self, fixture: FixtureState) -> Signal | None:
-        market = fixture.markets.get(self.MARKET)
+    # Ignore movements smaller than 0.10 percentage points.
+    MIN_PROBABILITY_CHANGE = 0.10
 
-        if market is None:
-            return None
+    def generate(
+        self,
+        fixture_id: int,
+        market: MarketState,
+    ) -> list[Signal]:
 
-        previous = getattr(market, "previous_odds", None)
+        if market.market != self.MARKET:
+            return []
 
-        # first update, nothing to compare
-        if previous is None:
-            return Signal(
-                fixture_id=fixture.fixture_id,
-                signal=SignalType.WATCH,
-                confidence=0.0,
-                edge=0.0,
-                reason="Waiting for another odds update.",
+        if len(market.history) < 2:
+            return []
+
+        signals: list[Signal] = []
+
+        history = list(market.history)
+
+        for outcome_index, outcome in enumerate(market.outcome_names):
+
+            velocity = Momentum.velocity(
+                history=history,
+                outcome_index=outcome_index,
             )
 
-        current = market.odds
+            if abs(velocity) < self.MIN_PROBABILITY_CHANGE:
+                continue
 
-        # Home odds only (part1)
-        previous_home = previous[0]
-        current_home = current[0]
-
-        change = (previous_home - current_home) / previous_home
-
-        if change >= 0.03:
-            return Signal(
-                fixture_id=fixture.fixture_id,
-                signal=SignalType.BUY,
-                confidence=min(change * 20, 0.99),
-                edge=change,
-                reason=f"Home odds shortened by {change:.1%}",
+            signal_type = (
+                SignalType.SHORTENING
+                if velocity > 0
+                else SignalType.DRIFT
             )
 
-        if change <= -0.03:
-            return Signal(
-                fixture_id=fixture.fixture_id,
-                signal=SignalType.SELL,
-                confidence=min(abs(change) * 20, 0.99),
-                edge=abs(change),
-                reason=f"Home odds drifted by {abs(change):.1%}",
+            signals.append(
+                Signal(
+                    fixture_id=fixture_id,
+                    market=market.market,
+                    outcome=outcome,
+                    signal_type=signal_type,
+                    message=(
+                        f"{outcome}: "
+                        f"velocity={velocity:+.2f}%"
+                    ),
+                    timestamp=market.updated_at,
+                )
             )
 
-        return Signal(
-            fixture_id=fixture.fixture_id,
-            signal=SignalType.WATCH,
-            confidence=0.5,
-            edge=abs(change),
-            reason="No significant movement.",
-        )
+        return signals

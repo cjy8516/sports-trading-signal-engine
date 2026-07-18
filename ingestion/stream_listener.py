@@ -6,6 +6,7 @@ import httpx
 from httpx_sse import connect_sse
 
 from config.settings import settings
+from engine.signal_engine import SignalEngine
 from ingestion.parser import parse_odds_update
 from storage.repository import Repository
 
@@ -13,6 +14,7 @@ from storage.repository import Repository
 class StreamListener:
     def __init__(self, repository: Repository) -> None:
         self._repository = repository
+        self._signal_engine = SignalEngine()
 
     def run(self) -> None:
         headers = {
@@ -21,7 +23,11 @@ class StreamListener:
             "Accept-Encoding": "deflate",
         }
 
-        with httpx.Client(base_url=settings.txline_base_url, timeout=None) as client:
+        with httpx.Client(
+            base_url=settings.txline_base_url,
+            timeout=None,
+        ) as client:
+
             with connect_sse(
                 client,
                 method="GET",
@@ -32,6 +38,7 @@ class StreamListener:
                 print("Connected to TxLINE odds stream.")
 
                 for event in event_source.iter_sse():
+
                     payload = json.loads(event.data)
 
                     # Heartbeat
@@ -41,17 +48,14 @@ class StreamListener:
 
                     update = parse_odds_update(payload)
 
-                    self._repository.update(update)
+                    market = self._repository.update(update)
+
+                    signals = self._signal_engine.generate(
+                        fixture_id=update.fixture_id,
+                        market=market,
+                    )
 
                     print(update)
 
-                    # ===== 调试 Repository =====
-                    # fixture = self._repository.get_fixture(update.fixture_id)
-                    # market_key = self._repository._market_key(update)
-                    # market = fixture.markets[market_key]
-
-                    # print("Previous:", market.previous_odds)
-                    # print("Current :", market.odds)
-                    # print("-" * 50)
-
-                    
+                    for signal in signals:
+                        print(signal)
