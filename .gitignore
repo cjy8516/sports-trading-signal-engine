@@ -2,3 +2,6 @@
 .env
 __pycache__/
 tools
+DEMO_SCRIPT.md
+PROJECT_CONTEXT.md
+data/*.jsonl
