@@ -56,9 +56,9 @@ class StreamListener:
                         print("Heartbeat:", payload)
                         continue
 
-                    try:
-                        update = parse_odds_update(payload)
-                    except ValueError:
+                    update = parse_odds_update(payload)
+
+                    if update is None:
                         continue
 
                     self._archive.record(update)
