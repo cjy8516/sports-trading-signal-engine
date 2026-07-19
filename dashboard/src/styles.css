@@ -235,6 +235,12 @@ select {
   box-shadow: inset 0 0 0 1px rgba(73, 231, 245, 0.18);
 }
 
+.mode-toggle button.disabled {
+  color: var(--muted-soft);
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .status-chip {
   display: inline-flex;
   align-items: center;
