@@ -1,122 +1,321 @@
-# README.md
-
 # Sports Trading Signal Engine
 
-A real-time sports trading signal engine that detects momentum-driven movements in live betting markets.
+<p align="center">
+
+**Real-time Sports Betting Market Intelligence**
+
+Detect meaningful betting market momentum from live odds rather than predicting football matches.
+
+</p>
 
 ---
 
-# Motivation
-
-Sports betting markets update continuously throughout a match.
-
-Rather than reacting to a single odds movement, this project analyses short-term market behaviour and identifies meaningful momentum using multiple quantitative indicators.
-
-The goal is to surface trading signals from live market dynamics.
+> Built for the **TxLINE Sports Trading Hackathon**
 
 ---
 
-# Features
+## Dashboard
 
-- Live TxLINE Server-Sent Events (SSE) ingestion
-- Market repository with rolling history
-- Automatic implied probability calculation
-- Momentum analysis
-  - Velocity
-  - Acceleration
-  - Persistence
-- Real-time signal generation
-- JSONL market archive
-- JSONL signal archive
-- Live UI (hackathon demo)
-
----
-
-# Architecture
+> **(Insert dashboard screenshot here)**
 
 ```
-TxLINE SSE
-      │
-      ▼
-Parser
-      │
-      ▼
-Repository
-      │
-      ▼
-Signal Engine
-      │
-      ├── Velocity
-      ├── Acceleration
-      └── Persistence
-      │
-      ▼
-Signals
-      │
-      ├── Archive
-      └── UI
+docs/dashboard.png
 ```
-
-Each component has a single responsibility, making the system easy to extend while remaining simple enough for a hackathon MVP.
 
 ---
 
-# Momentum Model
+# Overview
 
-Momentum is calculated using three metrics.
+Sports Trading Signal Engine is a real-time market intelligence platform that consumes live betting odds from **TxLINE** and transforms high-frequency market updates into actionable trading signals.
 
-## Velocity
+Unlike traditional prediction models, this project does **not attempt to predict match outcomes**.
 
-Measures the change in implied probability over a short rolling window.
+Instead, it analyses **betting market microstructure**, measuring how implied probabilities evolve over time and identifying meaningful momentum before presenting those movements through an interactive trading dashboard.
 
-## Acceleration
+---
 
-Measures whether market movement is speeding up or slowing down.
+# Key Features
 
-## Persistence
+✓ Real-time TxLINE SSE ingestion
 
-Measures how many consecutive updates move in the same direction.
+✓ Replay mode
 
-These metrics are combined into a weighted momentum score between 0 and 100.
+✓ Live mode (API ready)
+
+✓ Implied probability calculation
+
+✓ Market momentum analysis
+
+✓ Velocity
+
+✓ Acceleration
+
+✓ Persistence
+
+✓ Momentum score
+
+✓ Signal classification
+
+✓ Interactive trading dashboard
+
+✓ Timeline visualisation
+
+✓ JSONL replay archive
+
+---
+
+# System Architecture
+
+```text
+                     +---------------------+
+                     |     TxLINE SSE      |
+                     +---------------------+
+                                │
+                                ▼
+                      Stream Listener
+                                │
+                                ▼
+                     Market Repository
+                                │
+            ┌───────────────────┼───────────────────┐
+            ▼                   ▼                   ▼
+     Match State         Rolling History     Market State
+                                │
+                                ▼
+                      Signal Engine
+                                │
+      ┌─────────────────────────┼─────────────────────────┐
+      ▼                         ▼                         ▼
+  Velocity                Acceleration             Persistence
+      │                         │                         │
+      └─────────────────────────┼─────────────────────────┘
+                                ▼
+                    Momentum Score (0-100)
+                                │
+                                ▼
+                     Signal Classification
+                                │
+               ┌────────────────┴────────────────┐
+               ▼                                 ▼
+        JSONL Replay Archive              FastAPI API
+                                                 │
+                                                 ▼
+                                         React Dashboard
+```
+
+---
+
+# Signal Pipeline
+
+```text
+TxLINE Odds
+
+      │
+
+      ▼
+
+Remove Vig
+
+      │
+
+      ▼
+
+Implied Probability
+
+      │
+
+      ▼
+
+Rolling History
+
+      │
+
+      ▼
+
+Velocity
+
+      │
+
+      ▼
+
+Acceleration
+
+      │
+
+      ▼
+
+Persistence
+
+      │
+
+      ▼
+
+Momentum Score
+
+      │
+
+      ▼
+
+Trading Signal
+
+      │
+
+      ▼
+
+Replay Archive / Dashboard
+```
+
+---
+
+# Dashboard Layout
+
+```text
++---------------------------------------------------------------+
+| Header                                                        |
++---------------+---------------------------+-------------------+
+|               |                           |                   |
+| Match Summary | Probability Chart         | Signal Panel      |
+|               |                           |                   |
++---------------+---------------------------+-------------------+
+|               Focused Market                                  |
++---------------------------------------------------------------+
+| Replay Controls            Timeline                           |
++---------------------------------------------------------------+
+```
 
 ---
 
 # Example Signal
 
-```
-Fixture:
-Spain vs Argentina
+```text
+Fixture
 
-Market:
-Over 2.5 Goals
+England vs France
 
-Signal:
-STRONG_SHORTENING
+Market
 
-Score:
+1X2
+
+Signal
+
+STRONG SHORTENING
+
+Momentum Score
+
 92
 
-Reason:
-Velocity +0.82%
-Acceleration +0.18%
-Persistence 6
+Reason
+
+Velocity       +0.42%
+
+Acceleration   +0.11%
+
+Persistence    6
+```
+
+---
+
+# Project Structure
+
+```text
+sports-trading-signal-engine/
+
+├── api/
+│   ├── app.py
+│   └── routes.py
+│
+├── analysis/
+│   ├── signal_engine.py
+│   ├── market_movement.py
+│   ├── delayed_reaction.py
+│   ├── unexpected_movement.py
+│   └── volatility.py
+│
+├── ingestion/
+│   ├── stream_listener.py
+│   ├── txline_client.py
+│   ├── replay_loader.py
+│   └── snapshot_loader.py
+│
+├── storage/
+│   ├── repository.py
+│   └── database.py
+│
+├── dashboard/
+│
+├── data/
+│
+└── README.md
+```
+
+---
+
+# Getting Started
+
+```bash
+git clone ...
+
+cd sports-trading-signal-engine
+```
+
+Install Python dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Run backend
+
+```bash
+uvicorn api.app:app --reload
+```
+
+Run frontend
+
+```bash
+cd dashboard
+
+npm install
+
+npm run dev
 ```
 
 ---
 
 # Future Work
 
-- Richer UI
+- Live production streaming
 - Historical backtesting
-- Additional signal models
-- Automated testing
-- Performance optimisation
+- Market anomaly detection
+- Multi-match monitoring
+- Cross-market correlation analysis
+- Machine-learning assisted signal ranking
 
 ---
 
 # Tech Stack
 
+Backend
+
 - Python
-- Server-Sent Events (SSE)
+- FastAPI
+- SSE
 - Dataclasses
+
+Frontend
+
+- React
+- Vite
+- Recharts
+- Framer Motion
+
+Data
+
+- TxLINE
 - JSONL
+
+---
+
+# Acknowledgements
+
+Built for the TxLINE Sports Trading Hackathon.
