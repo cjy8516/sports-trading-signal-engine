@@ -5,4 +5,8 @@ tools
 DEMO_SCRIPT.md
 PROJECT_CONTEXT.md
 data/*.jsonl
+dashboard/dist/
+dashboard/node_modules/
 scripts
+node_modules
+dist
