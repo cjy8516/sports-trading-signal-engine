@@ -3,6 +3,8 @@ import { buildFixtureDatasets } from "../lib/dashboard";
 import { parseJsonl } from "../lib/jsonl";
 import { DEMO_FIXTURES } from "../lib/presentation";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 async function fetchJsonl(path) {
   const response = await fetch(path);
   if (!response.ok) {
@@ -27,8 +29,8 @@ export function useDashboardData() {
     async function load() {
       try {
         const [oddsRows, signalRows] = await Promise.all([
-          fetchJsonl("/api/replay"),
-          fetchJsonl("/api/signals"),
+          fetchJsonl(`${API_BASE}/api/replay`),
+          fetchJsonl(`${API_BASE}/api/signals`),
         ]);
 
         if (cancelled) {
